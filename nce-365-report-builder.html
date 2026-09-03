@@ -1,0 +1,961 @@
+<title>NCE 365 Report Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+  /* ── Token layer ── */
+  :root {
+    --green-900: #0E3B21;
+    --green-800: #145C33;
+    --green-700: #1D6B40;
+    --green-500: #2A9960;
+    --green-300: #7ECBA0;
+    --green-100: #D1EDDC;
+    --green-50:  #F0FAF4;
+    --gold:      #C8962A;
+    --gold-light:#FEF3D8;
+    --neutral-900:#1C2B24;
+    --neutral-600:#4A6358;
+    --neutral-400:#7FA090;
+    --neutral-200:#C8DDD5;
+    --neutral-100:#EDF4F0;
+    --neutral-50: #F6FAF7;
+
+    --bg:        var(--neutral-50);
+    --surface:   #FFFFFF;
+    --surface-2: var(--green-50);
+    --border:    var(--neutral-200);
+    --text:      var(--neutral-900);
+    --text-2:    var(--neutral-600);
+    --text-3:    var(--neutral-400);
+    --accent:    var(--green-700);
+    --accent-2:  var(--green-500);
+    --header-bg: var(--green-900);
+    --header-text:#FFFFFF;
+    --tag-basic-bg: #EBF5FF;
+    --tag-basic-text:#1A5FA0;
+    --tag-premium-bg:#F0EBF8;
+    --tag-premium-text:#6B3FA0;
+    --tag-combo-bg: #FFF8EB;
+    --tag-combo-text:#925A0A;
+    --drop-border: var(--green-300);
+    --drop-bg:   var(--green-50);
+    --shadow:    0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:        #0A1E12;
+      --surface:   #0F2D19;
+      --surface-2: #132A1C;
+      --border:    #1E4A2E;
+      --text:      #D6EDE0;
+      --text-2:    #85B899;
+      --text-3:    #4A7A5A;
+      --accent:    #3DAD6B;
+      --accent-2:  #5CC880;
+      --header-bg: #071410;
+      --header-text:#D6EDE0;
+      --tag-basic-bg: #0D2A3F;
+      --tag-basic-text:#7AB8E0;
+      --tag-premium-bg:#1E1030;
+      --tag-premium-text:#B08ADB;
+      --tag-combo-bg: #2A1E00;
+      --tag-combo-text:#D4A450;
+      --drop-border: #2A6040;
+      --drop-bg:   #0E2518;
+      --shadow:    0 1px 3px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.2);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg:        #0A1E12;
+    --surface:   #0F2D19;
+    --surface-2: #132A1C;
+    --border:    #1E4A2E;
+    --text:      #D6EDE0;
+    --text-2:    #85B899;
+    --text-3:    #4A7A5A;
+    --accent:    #3DAD6B;
+    --accent-2:  #5CC880;
+    --header-bg: #071410;
+    --header-text:#D6EDE0;
+    --tag-basic-bg: #0D2A3F;
+    --tag-basic-text:#7AB8E0;
+    --tag-premium-bg:#1E1030;
+    --tag-premium-text:#B08ADB;
+    --tag-combo-bg: #2A1E00;
+    --tag-combo-text:#D4A450;
+    --drop-border: #2A6040;
+    --drop-bg:   #0E2518;
+    --shadow:    0 1px 3px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.2);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--header-bg);
+    color: var(--header-text);
+    padding: 0 24px;
+  }
+  .header-inner {
+    max-width: 920px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    height: 58px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-mark {
+    width: 30px;
+    height: 30px;
+    background: var(--green-500);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .brand-mark svg { display: block; }
+  .brand-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--header-text);
+    letter-spacing: .01em;
+    opacity: .55;
+  }
+  .tool-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--header-text);
+    letter-spacing: .01em;
+  }
+  .header-divider {
+    width: 1px;
+    height: 18px;
+    background: rgba(255,255,255,.15);
+  }
+  .header-badge {
+    font-family: 'Outfit', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    background: rgba(255,255,255,.1);
+    color: rgba(255,255,255,.6);
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+
+  /* ── Page layout ── */
+  .page {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+  }
+
+  .page-heading {
+    font-family: 'Outfit', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 4px;
+    letter-spacing: -.01em;
+    text-wrap: balance;
+  }
+  .page-sub {
+    font-size: 13.5px;
+    color: var(--text-2);
+    margin: 0 0 28px;
+    max-width: 540px;
+  }
+
+  /* ── Drop zone ── */
+  .dropzone {
+    border: 2px dashed var(--drop-border);
+    background: var(--drop-bg);
+    border-radius: 12px;
+    padding: 36px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    position: relative;
+    margin-bottom: 24px;
+  }
+  .dropzone.drag-over {
+    border-color: var(--accent-2);
+    background: var(--green-50);
+  }
+  .dropzone:hover { border-color: var(--accent-2); }
+  .btn-browse {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding: 8px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .btn-browse:hover {
+    border-color: var(--accent);
+    background: var(--surface-2);
+  }
+  .drop-icon {
+    width: 44px;
+    height: 44px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .drop-icon svg { color: var(--accent); }
+  .drop-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 4px;
+  }
+  .drop-hint {
+    font-size: 12.5px;
+    color: var(--text-3);
+    margin: 0;
+  }
+  .drop-hint strong { color: var(--text-2); font-weight: 500; }
+  .drop-filename {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .drop-filename.visible { display: flex; }
+
+  /* ── Stats bar ── */
+  .stats-bar {
+    display: none;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stats-bar.visible {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 4px;
+  }
+  .stat-value {
+    font-family: 'Outfit', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .stat-sub {
+    font-size: 11.5px;
+    color: var(--text-2);
+    margin-top: 3px;
+  }
+  .stat-card.highlight .stat-value { color: var(--accent); }
+
+  /* ── Table section ── */
+  .table-section {
+    display: none;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 24px;
+  }
+  .table-section.visible { display: flex; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 12px;
+  }
+  .section-label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-2);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .search-box {
+    flex: 1;
+    max-width: 240px;
+    position: relative;
+  }
+  .search-box input {
+    width: 100%;
+    padding: 7px 10px 7px 32px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .search-box input:focus { border-color: var(--accent); }
+  .search-box svg {
+    position: absolute;
+    left: 9px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-3);
+  }
+
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .table-scroll {
+    overflow-x: auto;
+    max-height: 420px;
+    overflow-y: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  thead th {
+    background: var(--surface-2);
+    padding: 9px 14px;
+    text-align: left;
+    font-family: 'Outfit', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--text-2);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  thead th:hover { color: var(--accent); }
+  thead th .sort-arrow { opacity: .3; margin-left: 4px; font-size: 10px; }
+  thead th.sort-asc .sort-arrow::after { content: '▲'; opacity: 1; }
+  thead th.sort-desc .sort-arrow::after { content: '▼'; opacity: 1; }
+  thead th:not(.sort-asc):not(.sort-desc) .sort-arrow::after { content: '⇅'; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background .1s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface-2); }
+  tbody tr.hidden { display: none; }
+
+  td {
+    padding: 9px 14px;
+    color: var(--text);
+    vertical-align: middle;
+  }
+  td.email {
+    color: var(--text-2);
+    font-size: 12.5px;
+    font-family: 'Inter', monospace;
+  }
+  .license-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .badge-basic {
+    background: var(--tag-basic-bg);
+    color: var(--tag-basic-text);
+  }
+  .badge-premium {
+    background: var(--tag-premium-bg);
+    color: var(--tag-premium-text);
+  }
+  .badge-combo {
+    background: var(--tag-combo-bg);
+    color: var(--tag-combo-text);
+  }
+
+  .empty-state {
+    display: none;
+    text-align: center;
+    padding: 32px;
+    color: var(--text-3);
+    font-size: 13px;
+  }
+  .empty-state.visible { display: block; }
+
+  /* ── Download bar ── */
+  .download-bar {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 14px 24px;
+    z-index: 100;
+    box-shadow: 0 -4px 20px rgba(0,0,0,.1);
+  }
+  .download-bar.visible { display: block; }
+  .download-inner {
+    max-width: 920px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .download-info {
+    font-size: 13px;
+    color: var(--text-2);
+  }
+  .download-info strong {
+    font-weight: 600;
+    color: var(--text);
+  }
+  .btn-download {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--gold);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s, transform .1s;
+    white-space: nowrap;
+  }
+  .btn-download:hover { opacity: .9; }
+  .btn-download:active { transform: scale(.98); }
+  .btn-reset {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  .btn-reset:hover { border-color: var(--accent); color: var(--accent); }
+
+  .processing {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-2);
+    font-size: 13px;
+  }
+  .processing.visible { display: flex; }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 640px) {
+    .stats-bar.visible { grid-template-columns: repeat(2, 1fr); }
+    .page { padding-top: 20px; }
+    .header-badge { display: none; }
+  }
+</style>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
+          <path d="M8 1.5L2 5v6l6 3.5L14 11V5L8 1.5z" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M8 1.5v13M2 5l6 3.5L14 5" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="brand-name">GSSWTX</span>
+      <div class="header-divider"></div>
+      <span class="tool-title">NCE Report Builder</span>
+    </div>
+    <span class="header-badge">Microsoft 365</span>
+  </div>
+</header>
+
+<!-- PAGE BODY -->
+<main class="page">
+
+  <h1 class="page-heading">365 User List → NCE Report</h1>
+  <p class="page-sub">Drop the raw M365 CSV export below. The tool filters licensed internal accounts, strips free add-on licenses, and produces a clean Excel file ready for the AM.</p>
+
+  <!-- Hidden file input — triggered programmatically -->
+  <input type="file" id="fileInput" accept=".csv" style="display:none">
+
+  <!-- DROP ZONE -->
+  <div class="dropzone" id="dropzone">
+    <div class="drop-icon">
+      <svg width="20" height="20" fill="none" viewBox="0 0 20 20">
+        <path d="M3 13v3a1 1 0 001 1h12a1 1 0 001-1v-3M10 3v10M6.5 6.5L10 3l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <p class="drop-title">Drop the CSV export here</p>
+    <p class="drop-hint">Exported from M365 Admin Center → Users → Active Users → Export</p>
+    <label for="fileInput" class="btn-browse">
+      <svg width="13" height="13" fill="none" viewBox="0 0 13 13">
+        <path d="M2 2h5l3 3v6H2V2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+      </svg>
+      Browse for file
+    </label>
+    <div class="drop-filename" id="dropFilename">
+      <svg width="14" height="14" fill="none" viewBox="0 0 14 14"><path d="M2 2h6l3 3v7H2V2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+      <span id="filenameText"></span>
+    </div>
+  </div>
+
+  <!-- PROCESSING -->
+  <div class="processing" id="processing">
+    <div class="spinner"></div>
+    <span>Processing CSV…</span>
+  </div>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-card">
+      <div class="stat-label">Total in Export</div>
+      <div class="stat-value" id="statTotal">—</div>
+      <div class="stat-sub">raw user objects</div>
+    </div>
+    <div class="stat-card highlight">
+      <div class="stat-label">Licensed Users</div>
+      <div class="stat-value" id="statLicensed">—</div>
+      <div class="stat-sub">in final report</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Business Basic</div>
+      <div class="stat-value" id="statBasic">—</div>
+      <div class="stat-sub">seats</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Business Premium</div>
+      <div class="stat-value" id="statPremium">—</div>
+      <div class="stat-sub">seats</div>
+    </div>
+  </div>
+
+  <!-- TABLE SECTION -->
+  <div class="table-section" id="tableSection">
+    <div class="section-header">
+      <span class="section-label">Preview</span>
+      <div class="search-box">
+        <svg width="14" height="14" fill="none" viewBox="0 0 14 14" style="pointer-events:none">
+          <circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M9 9l3 3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Filter by name or email…" oninput="filterTable()">
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-scroll">
+        <table id="previewTable">
+          <thead>
+            <tr>
+              <th onclick="sortTable(0)" class="sort-asc" id="th0">Display Name<span class="sort-arrow"></span></th>
+              <th onclick="sortTable(1)" id="th1">UPN<span class="sort-arrow"></span></th>
+              <th onclick="sortTable(2)" id="th2">First<span class="sort-arrow"></span></th>
+              <th onclick="sortTable(3)" id="th3">Last<span class="sort-arrow"></span></th>
+              <th onclick="sortTable(4)" id="th4">License<span class="sort-arrow"></span></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        <div class="empty-state" id="emptyState">No users match the filter.</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- DOWNLOAD BAR -->
+<div class="download-bar" id="downloadBar">
+  <div class="download-inner">
+    <div class="download-info">
+      <strong id="dlCount">0</strong> licensed users ready · columns match the NCE report format
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn-reset" onclick="resetTool()">Clear</button>
+      <button class="btn-download" id="btnDownload" onclick="downloadExcel()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
+          <path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2M8 2v8M5 7l3 3 3-3" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Download Excel
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── State ── */
+  let processedRows = [];
+  let sortCol = 4;
+  let sortDir = 1;
+  let downloadsApi = null;
+
+  /* ── Wire up downloads capability ── */
+  (async () => {
+    downloadsApi = await claude.use('downloads');
+    if (!downloadsApi) {
+      const btn = document.getElementById('btnDownload');
+      if (btn) { btn.title = 'Download unavailable in this view'; btn.style.opacity = '.5'; btn.disabled = true; }
+    }
+  })();
+
+  /* ── Free add-ons to strip ── */
+  function cleanLicense(raw) {
+    if (!raw || raw === 'Unlicensed') return '';
+    const parts = raw.split('+').map(s => s.trim());
+    const kept = parts.filter(p => {
+      const lower = p.toLowerCase();
+      if (lower.includes('trial')) return false;
+      if (lower.includes('free'))  return false;
+      if (lower.includes('exploratory')) return false;
+      return true;
+    });
+    return kept.join('+');
+  }
+
+  /* ── CSV parser (RFC 4180-ish) ── */
+  function parseCSV(text) {
+    const rows = [];
+    let row = [], field = '', inQ = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQ) {
+        if (c === '"') {
+          if (text[i+1] === '"') { field += '"'; i++; }
+          else inQ = false;
+        } else { field += c; }
+      } else {
+        if (c === '"') { inQ = true; }
+        else if (c === ',') { row.push(field); field = ''; }
+        else if (c === '\r') { /* skip */ }
+        else if (c === '\n') {
+          row.push(field); field = '';
+          rows.push(row); row = [];
+        } else { field += c; }
+      }
+    }
+    if (field || row.length) { row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  /* ── Process CSV ── */
+  function processCSV(text) {
+    const rows = parseCSV(text);
+    if (rows.length < 2) return [];
+
+    const header = rows[0].map(h => h.trim());
+    const idx = {
+      displayName: header.indexOf('Display name'),
+      upn:         header.indexOf('User principal name'),
+      firstName:   header.indexOf('First name'),
+      lastName:    header.indexOf('Last name'),
+      licenses:    header.indexOf('Licenses'),
+    };
+
+    // Fallback to positional if exact headers not found
+    if (idx.displayName < 0) { idx.displayName = 0; idx.upn = 2; idx.firstName = 4; idx.lastName = 5; idx.licenses = 19; }
+
+    const total = rows.length - 1;
+    const output = [];
+
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || r.length < 2) continue;
+      const upn = (r[idx.upn] || '').trim();
+      const rawLic = (r[idx.licenses] || '').trim();
+
+      if (upn.includes('#EXT#')) continue;
+      if (!rawLic || rawLic === 'Unlicensed') continue;
+
+      const cleaned = cleanLicense(rawLic);
+      if (!cleaned || !cleaned.includes('Microsoft 365')) continue;
+
+      output.push({
+        displayName: (r[idx.displayName] || '').trim(),
+        upn:         upn,
+        firstName:   (r[idx.firstName]  || '').trim(),
+        lastName:    (r[idx.lastName]   || '').trim(),
+        license:     cleaned,
+        _total:      total,
+      });
+    }
+
+    // Sort: license ascending, then displayName ascending
+    output.sort((a, b) => {
+      const lc = a.license.localeCompare(b.license);
+      if (lc !== 0) return lc;
+      return a.displayName.localeCompare(b.displayName);
+    });
+
+    return { rows: output, total };
+  }
+
+  /* ── License badge ── */
+  function badgeFor(lic) {
+    const short = lic
+      .replace('Microsoft 365 ', '')
+      .replace('Business ', '');
+    let cls = 'badge-basic';
+    if (lic.includes('Premium') && lic.includes('+')) cls = 'badge-combo';
+    else if (lic.includes('Premium')) cls = 'badge-premium';
+    return `<span class="license-badge ${cls}">${short}</span>`;
+  }
+
+  /* ── Render table ── */
+  function renderTable(rows) {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+    rows.forEach((r, i) => {
+      const tr = document.createElement('tr');
+      tr.dataset.name = r.displayName.toLowerCase();
+      tr.dataset.email = r.upn.toLowerCase();
+      tr.innerHTML = `
+        <td>${escHtml(r.displayName)}</td>
+        <td class="email">${escHtml(r.upn)}</td>
+        <td>${escHtml(r.firstName)}</td>
+        <td>${escHtml(r.lastName)}</td>
+        <td>${badgeFor(r.license)}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  /* ── Stats ── */
+  function renderStats(rows, total) {
+    document.getElementById('statTotal').textContent = total.toLocaleString();
+    document.getElementById('statLicensed').textContent = rows.length.toLocaleString();
+    const basic = rows.filter(r => r.license.includes('Basic')).length;
+    const premium = rows.filter(r => r.license.includes('Premium')).length;
+    document.getElementById('statBasic').textContent = basic;
+    document.getElementById('statPremium').textContent = premium;
+    document.getElementById('dlCount').textContent = rows.length.toLocaleString();
+  }
+
+  /* ── Filter table ── */
+  function filterTable() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('#tableBody tr');
+    let visible = 0;
+    rows.forEach(tr => {
+      const match = !q || tr.dataset.name.includes(q) || tr.dataset.email.includes(q);
+      tr.classList.toggle('hidden', !match);
+      if (match) visible++;
+    });
+    document.getElementById('emptyState').classList.toggle('visible', visible === 0);
+  }
+
+  /* ── Sort table ── */
+  function sortTable(col) {
+    const ths = document.querySelectorAll('thead th');
+    ths.forEach((th, i) => {
+      th.classList.remove('sort-asc', 'sort-desc');
+      if (i === col) th.classList.add(sortDir === 1 && sortCol === col ? 'sort-desc' : 'sort-asc');
+    });
+    if (sortCol === col) sortDir *= -1; else { sortCol = col; sortDir = 1; }
+
+    const keys = ['displayName','upn','firstName','lastName','license'];
+    processedRows.sort((a, b) => {
+      const va = a[keys[col]] || '';
+      const vb = b[keys[col]] || '';
+      return va.localeCompare(vb) * sortDir;
+    });
+    renderTable(processedRows);
+    filterTable();
+  }
+
+  /* ── File handling ── */
+  const dropzone  = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+
+  // Clicking the dropzone background (not the label) also opens the picker
+  dropzone.addEventListener('click', e => {
+    if (e.target.closest('label')) return; // label handles its own activation
+    fileInput.click();
+  });
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+  fileInput.addEventListener('change', e => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
+  });
+
+  function handleFile(file) {
+    document.getElementById('filenameText').textContent = file.name;
+    document.getElementById('dropFilename').classList.add('visible');
+    document.getElementById('processing').classList.add('visible');
+
+    const reader = new FileReader();
+    reader.onload = e => {
+      setTimeout(() => {
+        try {
+          const result = processCSV(e.target.result);
+          processedRows = result.rows;
+
+          document.getElementById('processing').classList.remove('visible');
+          document.getElementById('statsBar').classList.add('visible');
+          document.getElementById('tableSection').classList.add('visible');
+          document.getElementById('downloadBar').classList.add('visible');
+
+          renderStats(processedRows, result.total);
+          renderTable(processedRows);
+        } catch(err) {
+          document.getElementById('processing').classList.remove('visible');
+          alert('Could not parse the CSV. Please make sure it\'s a valid M365 export.\n\n' + err.message);
+        }
+      }, 80);
+    };
+    reader.readAsText(file);
+  }
+
+  /* ── Download Excel ── */
+  async function downloadExcel() {
+    if (!downloadsApi) return;
+
+    const btn = document.getElementById('btnDownload');
+    const origText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span style="opacity:.7">Preparing…</span>';
+
+    try {
+      const headers = ['Display name', 'User principal name', 'First name', 'Last name', 'Licenses'];
+      const data = [
+        headers,
+        ...processedRows.map(r => [r.displayName, r.upn, r.firstName || null, r.lastName || null, r.license])
+      ];
+
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      ws['!autofilter'] = { ref: 'A1:E1' };
+
+      // Auto-fit column widths to content
+      const colWidths = data[0].map((_, ci) =>
+        Math.min(60, Math.max(...data.map(row => (row[ci] ?? '').toString().length)) + 2)
+      );
+      ws['!cols'] = colWidths.map(w => ({ wch: w }));
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'GSSWTX 365 User List');
+
+      const today = new Date();
+      const stamp = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`;
+      const filename = `GSSWTX_365_User_List_${stamp}.xlsx`;
+
+      // Write to ArrayBuffer for the downloads capability
+      const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
+      await downloadsApi.save({ filename, data: buf });
+    } catch (err) {
+      if (err?.code === 'declined') { /* viewer cancelled — no action */ }
+      else if (err?.code === 'rate_limited') {
+        setTimeout(() => downloadExcel(), 1500);
+        return;
+      } else {
+        alert('Download failed: ' + (err?.message ?? err));
+      }
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = origText;
+    }
+  }
+
+  /* ── Reset ── */
+  function resetTool() {
+    processedRows = [];
+    document.getElementById('fileInput').value = '';
+    document.getElementById('dropFilename').classList.remove('visible');
+    document.getElementById('statsBar').classList.remove('visible');
+    document.getElementById('tableSection').classList.remove('visible');
+    document.getElementById('downloadBar').classList.remove('visible');
+    document.getElementById('searchInput').value = '';
+    document.getElementById('tableBody').innerHTML = '';
+  }
+</script>
