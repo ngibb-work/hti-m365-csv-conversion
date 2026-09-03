@@ -546,7 +546,7 @@
           <path d="M8 1.5v13M2 5l6 3.5L14 5" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
         </svg>
       </div>
-      <span class="brand-name">GSSWTX</span>
+      <span class="brand-name">High Touch</span>
       <div class="header-divider"></div>
       <span class="tool-title">NCE Report Builder</span>
     </div>
@@ -670,6 +670,7 @@
   let processedRows = [];
   let sortCol = 4;
   let sortDir = 1;
+  let currentFileName = '';
   /* ── Try to wire up Claude downloads capability (works in Claude artifact) ── */
   let downloadsApi = null;
   if (typeof window.claude !== 'undefined' && window.claude?.use) {
@@ -867,6 +868,7 @@
 
   function handleFile(file) {
     document.getElementById('filenameText').textContent = file.name;
+    currentFileName = file.name.replace(/\.csv$/i, '').replace(/\s+/g, '_');
     document.getElementById('dropFilename').classList.add('visible');
     document.getElementById('processing').classList.add('visible');
 
@@ -917,11 +919,12 @@
       ws['!cols'] = colWidths.map(w => ({ wch: w }));
 
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'GSSWTX 365 User List');
+      XLSX.utils.book_append_sheet(wb, ws, '365 User List');
 
       const today = new Date();
       const stamp = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`;
-      const filename = `GSSWTX_365_User_List_${stamp}.xlsx`;
+      const baseName = currentFileName || 'NCE_365_User_List';
+      const filename = `${baseName}_${stamp}.xlsx`;
 
       const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
 
