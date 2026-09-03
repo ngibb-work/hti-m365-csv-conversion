@@ -670,16 +670,11 @@
   let processedRows = [];
   let sortCol = 4;
   let sortDir = 1;
+  /* ── Try to wire up Claude downloads capability (works in Claude artifact) ── */
   let downloadsApi = null;
-
-  /* ── Wire up downloads capability ── */
-  (async () => {
-    downloadsApi = await claude.use('downloads');
-    if (!downloadsApi) {
-      const btn = document.getElementById('btnDownload');
-      if (btn) { btn.title = 'Download unavailable in this view'; btn.style.opacity = '.5'; btn.disabled = true; }
-    }
-  })();
+  if (typeof window.claude !== 'undefined' && window.claude?.use) {
+    (async () => { downloadsApi = await window.claude.use('downloads'); })();
+  }
 
   /* ── Free add-ons to strip ── */
   function cleanLicense(raw) {
@@ -899,8 +894,6 @@
 
   /* ── Download Excel ── */
   async function downloadExcel() {
-    if (!downloadsApi) return;
-
     const btn = document.getElementById('btnDownload');
     const origText = btn.innerHTML;
     btn.disabled = true;
@@ -929,10 +922,22 @@
       const stamp = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`;
       const filename = `GSSWTX_365_User_List_${stamp}.xlsx`;
 
-      // Write to ArrayBuffer for the downloads capability
       const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
 
-      await downloadsApi.save({ filename, data: buf });
+      // Use Claude downloads capability if available, otherwise standard browser download
+      if (downloadsApi) {
+        await downloadsApi.save({ filename, data: buf });
+      } else {
+        const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
     } catch (err) {
       if (err?.code === 'declined') { /* viewer cancelled — no action */ }
       else if (err?.code === 'rate_limited') {
