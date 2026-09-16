@@ -626,7 +626,7 @@
       <div class="stat-sub">raw user objects</div>
     </div>
     <div class="stat-card highlight">
-      <div class="stat-label">Licensed Users</div>
+      <div class="stat-label">Licensed Mailboxes</div>
       <div class="stat-value" id="statLicensed">—</div>
       <div class="stat-sub">in final report</div>
     </div>
@@ -672,7 +672,7 @@
 <div class="download-bar" id="downloadBar">
   <div class="download-inner">
     <div class="download-info">
-      <strong id="dlCount">0</strong> licensed users ready · columns match the NCE report format
+      <strong id="dlCount">0</strong> licensed mailboxes ready · columns match the NCE report format
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn-reset" onclick="resetTool()">Clear</button>
@@ -999,9 +999,9 @@
       colWidths[0] = Math.min(60, Math.max(colWidths[0], licNameMax + 2));
       worksheet.columns = colWidths.map(w => ({ width: w }));
 
-      // Embed HTI logo in upper-left (spans ~3 rows tall, 2 columns wide)
+      // Embed HTI logo — slight inset so it doesn't hug the very corner
       const imageId = workbook.addImage({ base64: LOGO_BASE64, extension: 'png' });
-      worksheet.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 220, height: 51 } });
+      worksheet.addImage(imageId, { tl: { col: 0.12, row: 0.18 }, ext: { width: 220, height: 51 } });
 
       // Four blank rows to give the logo visual space (logo is ~51px, rows are ~20px each)
       worksheet.addRow([]);
@@ -1023,37 +1023,62 @@
 
       // ── License summary table ──────────────────────────────────────────
 
-      // Summary header row (row 5)
+      // Summary header row — fill only columns A & B (no green beyond data)
       const summaryHdr = worksheet.addRow(['License Type', 'Total Assigned Qty']);
-      summaryHdr.font  = { bold: true, color: { argb: 'FF1C2B24' } };
-      summaryHdr.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1EDDC' } };
+      summaryHdr.font   = { bold: true, color: { argb: 'FF1C2B24' } };
       summaryHdr.height = 16;
+      [1, 2].forEach(c => {
+        summaryHdr.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1EDDC' } };
+      });
       summaryHdr.getCell(2).alignment = { horizontal: 'right' };
 
       // One row per license type, qty right-aligned
+      const totalQty = sortedLics.reduce((sum, [, n]) => sum + n, 0);
       sortedLics.forEach(([lic, count]) => {
         const r = worksheet.addRow([lic, count]);
         r.getCell(2).alignment = { horizontal: 'right' };
       });
 
+      // Bold total row
+      const totalRow = worksheet.addRow(['Total Licenses Assigned', totalQty]);
+      totalRow.font = { bold: true, color: { argb: 'FF1C2B24' } };
+      totalRow.getCell(2).alignment = { horizontal: 'right' };
+
       // Blank spacer between summary and data table
       worksheet.addRow([]);
 
       // ── Main data header row ─────────────────────────────────────────────
-      // Row = 4 (logo blanks) + 1 (summary hdr) + N (counts) + 1 (blank) + 1 = 7 + N
+      // Row = 4 (logo blanks) + 1 (summary hdr) + N (lic rows) + 1 (total) + 1 (blank) + 1 = 8 + N
       const mainHeaderRow = worksheet.addRow(headers);
-      mainHeaderRow.font  = { bold: true, color: { argb: 'FF1C2B24' } };
-      mainHeaderRow.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1EDDC' } };
+      mainHeaderRow.font   = { bold: true, color: { argb: 'FF1C2B24' } };
       mainHeaderRow.height = 18;
+      // Fill only the 5 data columns so green doesn't bleed into empty columns
+      [1, 2, 3, 4, 5].forEach(c => {
+        mainHeaderRow.getCell(c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1EDDC' } };
+      });
 
-      const mainHdrRowNum = 4 + 1 + sortedLics.length + 1 + 1;
+      const mainHdrRowNum = 4 + 1 + sortedLics.length + 1 + 1 + 1;
       worksheet.autoFilter = `A${mainHdrRowNum}:E${mainHdrRowNum}`;
 
-      // Open with cursor on Display Name header — highlights the filter row for clients
-      worksheet.views = [{ state: 'normal', activeCell: `A${mainHdrRowNum}` }];
+      // Freeze panes at the main header row + open with cursor there to highlight filters
+      worksheet.views = [{
+        state: 'frozen',
+        xSplit: 0,
+        ySplit: mainHdrRowNum,
+        activeCell: `A${mainHdrRowNum}`
+      }];
 
-      // Data rows
-      dataRows.forEach(row => worksheet.addRow(row));
+      // Data rows with alternating light-green shading for readability
+      dataRows.forEach((row, i) => {
+        const addedRow = worksheet.addRow(row);
+        if (i % 2 === 1) {
+          for (let c = 1; c <= 5; c++) {
+            addedRow.getCell(c).fill = {
+              type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD8EFE2' }
+            };
+          }
+        }
+      });
 
       // Filename
       const today = new Date();
