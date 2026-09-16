@@ -747,7 +747,7 @@
       if (!rawLic || rawLic === 'Unlicensed') continue;
 
       const cleaned = cleanLicense(rawLic);
-      if (!cleaned || !cleaned.includes('Microsoft 365')) continue;
+      if (!cleaned) continue;
 
       output.push({
         displayName: (r[idx.displayName] || '').trim(),
