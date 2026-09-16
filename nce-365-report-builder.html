@@ -276,8 +276,36 @@
   }
   .stats-bar.visible {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
+  .license-breakdown {
+    display: none;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .license-breakdown.visible { display: flex; }
+  .lic-card {
+    flex: 0 1 calc(25% - 12px);
+    min-width: 160px;
+  }
+  .lic-count {
+    font-size: 20px !important;
+  }
+  .lic-card {
+    cursor: pointer;
+    transition: box-shadow .15s, border-color .15s, transform .1s;
+  }
+  .lic-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(29,107,64,.15), var(--shadow-sm);
+  }
+  .lic-card.active {
+    border-color: var(--accent);
+    background: var(--surface-2);
+    box-shadow: 0 0 0 2px rgba(29,107,64,.25), var(--shadow-sm);
+  }
+  .lic-card.active .lic-count { color: var(--accent); }
   .stat-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -602,17 +630,10 @@
       <div class="stat-value" id="statLicensed">—</div>
       <div class="stat-sub">in final report</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Business Basic</div>
-      <div class="stat-value" id="statBasic">—</div>
-      <div class="stat-sub">seats</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Business Premium</div>
-      <div class="stat-value" id="statPremium">—</div>
-      <div class="stat-sub">seats</div>
-    </div>
   </div>
+
+  <!-- LICENSE BREAKDOWN (dynamic) -->
+  <div class="license-breakdown" id="licenseBreakdown"></div>
 
   <!-- TABLE SECTION -->
   <div class="table-section" id="tableSection">
@@ -671,6 +692,7 @@
   let sortCol = 4;
   let sortDir = 1;
   let currentFileName = '';
+  let activeLicFilter = null;   // currently-selected license tile
   /* ── Try to wire up Claude downloads capability (works in Claude artifact) ── */
   let downloadsApi = null;
   if (typeof window.claude !== 'undefined' && window.claude?.use) {
@@ -806,25 +828,63 @@
   function renderStats(rows, total) {
     document.getElementById('statTotal').textContent = total.toLocaleString();
     document.getElementById('statLicensed').textContent = rows.length.toLocaleString();
-    const basic = rows.filter(r => r.license.includes('Basic')).length;
-    const premium = rows.filter(r => r.license.includes('Premium')).length;
-    document.getElementById('statBasic').textContent = basic;
-    document.getElementById('statPremium').textContent = premium;
     document.getElementById('dlCount').textContent = rows.length.toLocaleString();
+
+    // Count each license component separately (split on '+')
+    const counts = {};
+    rows.forEach(r => {
+      r.license.split('+').map(s => s.trim()).filter(Boolean).forEach(p => {
+        counts[p] = (counts[p] || 0) + 1;
+      });
+    });
+
+    // Sort by count desc, then alphabetically
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+    const breakdown = document.getElementById('licenseBreakdown');
+    breakdown.innerHTML = '';
+    sorted.forEach(([lic, count]) => {
+      const card = document.createElement('div');
+      card.className = 'stat-card lic-card';
+      card.innerHTML =
+        '<div class="stat-label" style="white-space:normal;line-height:1.3">' + escHtml(lic) + '</div>' +
+        '<div class="stat-value lic-count">' + count + '</div>' +
+        '<div class="stat-sub">seat' + (count !== 1 ? 's' : '') + ' · click to filter</div>';
+      card.addEventListener('click', () => {
+        if (activeLicFilter === lic) {
+          // Deselect — clear license filter, restore search filter
+          activeLicFilter = null;
+          document.querySelectorAll('.lic-card').forEach(c => c.classList.remove('active'));
+          applyFilters();
+        } else {
+          activeLicFilter = lic;
+          document.querySelectorAll('.lic-card').forEach(c => c.classList.remove('active'));
+          card.classList.add('active');
+          applyFilters();
+        }
+      });
+      breakdown.appendChild(card);
+    });
+    breakdown.classList.add('visible');
   }
 
-  /* ── Filter table ── */
-  function filterTable() {
+  /* ── Filter table (search + active license tile) ── */
+  function applyFilters() {
     const q = document.getElementById('searchInput').value.toLowerCase();
     const rows = document.querySelectorAll('#tableBody tr');
     let visible = 0;
-    rows.forEach(tr => {
-      const match = !q || tr.dataset.name.includes(q) || tr.dataset.email.includes(q);
+    rows.forEach((tr, i) => {
+      const row = processedRows[i];
+      const searchOk = !q || tr.dataset.name.includes(q) || tr.dataset.email.includes(q);
+      const licOk = !activeLicFilter || (row &&
+        row.license.split('+').map(s => s.trim()).includes(activeLicFilter));
+      const match = searchOk && licOk;
       tr.classList.toggle('hidden', !match);
       if (match) visible++;
     });
     document.getElementById('emptyState').classList.toggle('visible', visible === 0);
   }
+  function filterTable() { applyFilters(); }
 
   /* ── Sort table ── */
   function sortTable(col) {
@@ -918,11 +978,25 @@
         r.license
       ]);
 
-      // Auto-fit column widths
+      // Pre-compute license summary so we can include license name lengths in column width calc
+      const licCounts = {};
+      processedRows.forEach(r => {
+        r.license.split('+').map(s => s.trim()).filter(Boolean).forEach(p => {
+          licCounts[p] = (licCounts[p] || 0) + 1;
+        });
+      });
+      const sortedLics = Object.entries(licCounts)
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+      const licNameMax = sortedLics.length > 0
+        ? Math.max(...sortedLics.map(([lic]) => lic.length))
+        : 0;
+
+      // Auto-fit column widths (col A also accounts for longest license type name)
       const colWidths = headers.map((h, ci) => {
         const maxLen = Math.max(h.length, ...dataRows.map(row => (row[ci] ?? '').toString().length));
         return Math.min(60, maxLen + 2);
       });
+      colWidths[0] = Math.min(60, Math.max(colWidths[0], licNameMax + 2));
       worksheet.columns = colWidths.map(w => ({ width: w }));
 
       // Embed HTI logo in upper-left (spans ~3 rows tall, 2 columns wide)
@@ -935,14 +1009,48 @@
       worksheet.addRow([]);
       worksheet.addRow([]);
 
-      // Header row (row 4)
-      const headerRow = worksheet.addRow(headers);
-      headerRow.font = { bold: true, color: { argb: 'FF1C2B24' } };
-      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1EDDC' } };
-      headerRow.height = 18;
+      // Solid white background across the logo area (rows 1-4, all 5 columns)
+      // and a subtle bottom border to separate it from the header
+      for (let r = 1; r <= 4; r++) {
+        for (let c = 1; c <= 5; c++) {
+          const cell = worksheet.getRow(r).getCell(c);
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+          if (r === 4) {
+            cell.border = { bottom: { style: 'thin', color: { argb: 'FFD1EDDC' } } };
+          }
+        }
+      }
 
-      // AutoFilter on the header row
-      worksheet.autoFilter = 'A5:E5';
+      // ── License summary table ──────────────────────────────────────────
+
+      // Summary header row (row 5)
+      const summaryHdr = worksheet.addRow(['License Type', 'Total Assigned Qty']);
+      summaryHdr.font  = { bold: true, color: { argb: 'FF1C2B24' } };
+      summaryHdr.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1EDDC' } };
+      summaryHdr.height = 16;
+      summaryHdr.getCell(2).alignment = { horizontal: 'right' };
+
+      // One row per license type, qty right-aligned
+      sortedLics.forEach(([lic, count]) => {
+        const r = worksheet.addRow([lic, count]);
+        r.getCell(2).alignment = { horizontal: 'right' };
+      });
+
+      // Blank spacer between summary and data table
+      worksheet.addRow([]);
+
+      // ── Main data header row ─────────────────────────────────────────────
+      // Row = 4 (logo blanks) + 1 (summary hdr) + N (counts) + 1 (blank) + 1 = 7 + N
+      const mainHeaderRow = worksheet.addRow(headers);
+      mainHeaderRow.font  = { bold: true, color: { argb: 'FF1C2B24' } };
+      mainHeaderRow.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1EDDC' } };
+      mainHeaderRow.height = 18;
+
+      const mainHdrRowNum = 4 + 1 + sortedLics.length + 1 + 1;
+      worksheet.autoFilter = `A${mainHdrRowNum}:E${mainHdrRowNum}`;
+
+      // Open with cursor on Display Name header — highlights the filter row for clients
+      worksheet.views = [{ state: 'normal', activeCell: `A${mainHdrRowNum}` }];
 
       // Data rows
       dataRows.forEach(row => worksheet.addRow(row));
@@ -989,6 +1097,9 @@
     document.getElementById('fileInput').value = '';
     document.getElementById('dropFilename').classList.remove('visible');
     document.getElementById('statsBar').classList.remove('visible');
+    activeLicFilter = null;
+    const lb = document.getElementById('licenseBreakdown');
+    if (lb) { lb.innerHTML = ''; lb.classList.remove('visible'); }
     document.getElementById('tableSection').classList.remove('visible');
     document.getElementById('downloadBar').classList.remove('visible');
     document.getElementById('searchInput').value = '';
