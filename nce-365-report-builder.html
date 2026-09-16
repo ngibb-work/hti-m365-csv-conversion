@@ -927,9 +927,10 @@
 
       // Embed HTI logo in upper-left (spans ~3 rows tall, 2 columns wide)
       const imageId = workbook.addImage({ base64: LOGO_BASE64, extension: 'png' });
-      worksheet.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 220, height: 66 } });
+      worksheet.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 220, height: 51 } });
 
-      // Three blank rows to give the logo visual space
+      // Four blank rows to give the logo visual space (logo is ~51px, rows are ~20px each)
+      worksheet.addRow([]);
       worksheet.addRow([]);
       worksheet.addRow([]);
       worksheet.addRow([]);
@@ -941,7 +942,7 @@
       headerRow.height = 18;
 
       // AutoFilter on the header row
-      worksheet.autoFilter = 'A4:E4';
+      worksheet.autoFilter = 'A5:E5';
 
       // Data rows
       dataRows.forEach(row => worksheet.addRow(row));
